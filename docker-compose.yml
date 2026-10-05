@@ -1,6 +1,6 @@
 services:
   git:
-    image: codeberg.org/forgejo/forgejo:13
+    image: codeberg.org/forgejo/forgejo:16.0.5@sha256:cf5f5ae6acf2ababca0ee3d255705b83a47f35b25e07fc931d694d60664053fe
     container_name: git_ui
     mem_limit: 4g
     memswap_limit: 4g
@@ -9,8 +9,10 @@ services:
     depends_on:
       - git_db
     ports:
-      - "8000:3000"
+      - "127.0.0.1:8000:3000"
       - "127.0.0.1:2222:22"
+    security_opt:
+      - no-new-privileges:true
     environment:
       USER_UID: 1000
       USER_GID: 1000
@@ -23,7 +25,12 @@ services:
       FORGEJO__APP__DEFAULT_LANG: en-US
       FORGEJO__I18N__LANGS: en-US
       FORGEJO__I18N__NAMES: English
-      FORGEJO__ACTIONS__ENABLED: "true"
+      FORGEJO__ACTIONS__ENABLED: "false"
+      FORGEJO__SECURITY__DISABLE_GIT_HOOKS: "true"
+      FORGEJO__SECURITY__REVERSE_PROXY_TRUSTED_PROXIES: "127.0.0.1/32"
+      FORGEJO__SERVICE__DISABLE_REGISTRATION: "true"
+      FORGEJO__OPENID__ENABLE_OPENID_SIGNUP: "false"
+      FORGEJO__REPOSITORY__DEFAULT_PRIVATE: "private"
     volumes:
       - git_data:/data
 
@@ -34,51 +41,14 @@ services:
       retries: 5
       start_period: 40s
 
-  runner:
-    image: code.forgejo.org/forgejo/runner:6.2.2
-    container_name: git_runner
-    user: "0:0"
-    mem_limit: 1g
-    cpus: "2.0"
-    restart: always
-    depends_on:
-      git:
-        condition: service_healthy
-    environment:
-      GITEA_INSTANCE_URL: http://git:3000
-      GITEA_RUNNER_REGISTRATION_TOKEN: ${GITEA_RUNNER_REGISTRATION_TOKEN}
-      GITEA_RUNNER_NAME: ${GITEA_RUNNER_NAME:-git-runner}
-      GITEA_RUNNER_LABELS: ${GITEA_RUNNER_LABELS:-docker:docker://node:22-bookworm}
-    volumes:
-      - runner_data:/data
-      - /var/run/docker.sock:/var/run/docker.sock
-    working_dir: /data
-    command:
-      - /bin/sh
-      - -c
-      - |
-        if [ ! -f /data/.runner ]; then
-          forgejo-runner register \
-            --no-interactive \
-            --instance "$$GITEA_INSTANCE_URL" \
-            --token "$$GITEA_RUNNER_REGISTRATION_TOKEN" \
-            --name "$$GITEA_RUNNER_NAME" \
-            --labels "$$GITEA_RUNNER_LABELS"
-        fi
-        exec forgejo-runner daemon
-    healthcheck:
-      test: ["CMD", "pgrep", "-x", "forgejo-runner"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-
   git_db:
     image: postgres:18
     container_name: git_db
     mem_limit: 1g
     cpus: "2.0"
     restart: always
+    ports:
+      - "127.0.0.1:15432:5432"
     environment:
       POSTGRES_USER: git
       POSTGRES_PASSWORD: ${DB_PASSWD}
@@ -100,6 +70,3 @@ volumes:
   git_data:
     external: true
     name: git_git_data
-  runner_data:
-    external: true
-    name: git_runner_data
