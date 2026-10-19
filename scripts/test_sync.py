@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import unittest
 
-SCRIPT = Path(__file__).with_name('sync-to-ovh.sh')
+SCRIPT = Path(__file__).with_name('sync.sh')
 DOCKER = '''#!/usr/bin/env python3
 import os,sys
 from pathlib import Path

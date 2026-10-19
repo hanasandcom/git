@@ -7,15 +7,22 @@ Never run both applications as independent writers against these copies.
 
 ## Deployed layout
 
+The source unit files are named `tunnel.service`, `proxy.socket`, and
+`proxy.service`; systemd uses those filenames as unit names when installed. If
+the hosts still have the previous `forgejo-replication-*` unit names, transition
+them deliberately during deployment: stop and disable the old units, install
+the renamed units, reload systemd, then enable and verify the new units. Do not
+run old and new tunnel or proxy units together.
+
 - Primary PostgreSQL 18: `git_db`, volume `git_git_db_data`, data directory
   `/var/lib/postgresql/18/docker`; published **only** on `127.0.0.1:15432`.
 - Standby: same PostgreSQL image build, volume `git_git_db_streaming`.
   The old OVH `git_git_db_data` volume is retained as a pre-migration rollback copy.
-- Inspur systemd unit `forgejo-replication-tunnel.service`: makes an outbound SSH
+- Inspur systemd unit `tunnel.service`: makes an outbound SSH
   connection to OVH port 222 and reverse-forwards OVH `127.0.0.1:15433` to the
   primary's loopback database port. This direction avoids blocked incoming SSH
   connections to Inspur.
-- OVH `forgejo-replication-proxy.socket`/`.service`: socket-activated systemd proxy
+- OVH `proxy.socket`/`proxy.service`: socket-activated systemd proxy
   from Docker bridge `172.26.0.1:15432` to the reverse tunnel `127.0.0.1:15433`.
   A UFW rule permits only `br-dc3f1f377f4b`, source `172.26.0.0/16`, destination
   `172.26.0.1`, TCP port 15432. No PostgreSQL port is exposed publicly. Recheck
@@ -66,7 +73,7 @@ before reporting success. The separate hourly doctor remains unchanged.
 On Inspur:
 
 ```sh
-systemctl status forgejo-replication-tunnel.service
+systemctl status tunnel.service
 docker exec git_db psql -X -U git -d git -c "SELECT application_name,state,sync_state,pg_wal_lsn_diff(pg_current_wal_lsn(),replay_lsn) AS lag_bytes FROM pg_stat_replication;"
 docker exec git_db psql -X -U git -d git -c "SELECT slot_name,active,wal_status,safe_wal_size FROM pg_replication_slots;"
 ```
@@ -74,7 +81,7 @@ docker exec git_db psql -X -U git -d git -c "SELECT slot_name,active,wal_status,
 On OVH:
 
 ```sh
-systemctl status forgejo-replication-proxy.socket forgejo-replication-proxy.service
+systemctl status proxy.socket proxy.service
 docker exec git_db psql -X -U git -d git -c "SELECT pg_is_in_recovery(),pg_last_wal_receive_lsn(),pg_last_wal_replay_lsn();"
 docker exec git_db psql -X -U git -d git -c "SELECT status,latest_end_lsn FROM pg_stat_wal_receiver;"
 ```

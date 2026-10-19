@@ -85,10 +85,11 @@ live PostgreSQL data directory is not, by itself, a reliable database backup;
 use a PostgreSQL-aware backup or stop the database for a coordinated volume
 backup.
 
-The scripts under `scripts/` also include an optional primary-to-standby
-replication/synchronization setup. It assumes the host paths, SSH account, key,
-port, and volume names documented in the script defaults. Review and configure
-those values for the actual hosts before installing its systemd timers. The
+`deploy/` contains the optional primary-to-standby configuration and systemd
+units; `scripts/` contains the synchronization and maintenance commands. The
+replication setup assumes the host paths, SSH account, key, port, and volume
+names documented in the script defaults. Review and configure those values for
+the actual hosts before installing its systemd timers. The
 sync script checks that the standby is still in recovery and stopped before it
 copies Forgejo data; it does not perform automatic failover. Confirm PostgreSQL
 replication and the standby's state independently during recovery drills.
@@ -98,16 +99,16 @@ installing or running sync unless that volume is intentionally in use.
 
 ## Maintenance scripts
 
-- `scripts/forgejo-doctor.sh` runs selected Forgejo repository-integrity checks.
+- `scripts/doctor.sh` runs selected Forgejo repository-integrity checks.
   Its default is `FIX=1`, which applies the doctor's supported repairs. Set
   `FIX=0` for a check-only run.
-- `scripts/sync-to-ovh.sh` synchronizes Forgejo files to a fenced standby and
+- `scripts/sync.sh` synchronizes Forgejo files to a fenced standby and
   checks PostgreSQL WAL replay. Review its defaults and SSH trust setup before
   running it.
-- `scripts/install-maintenance.sh` installs systemd timers for the doctor and
+- `scripts/timers.sh` installs systemd timers for the doctor and
   standby sync. Run it only on the intended primary host, as root, after
   configuring the scripts and verifying the standby.
-- `scripts/ensure-git-stack.sh` starts the Compose stack from
+- `scripts/stack.sh` starts the Compose stack from
   `/home/hanasand/git` and is intended for that host layout.
 
 These operational scripts can change or repair production state. Inspect their

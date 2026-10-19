@@ -12,8 +12,8 @@ if [ "${EUID}" -ne 0 ]; then
 fi
 
 install -d -m 0755 "$INSTALL_DIR"
-install -m 0755 "$SCRIPT_DIR/forgejo-doctor.sh" "$INSTALL_DIR/hanasand-forgejo-doctor"
-install -m 0755 "$SCRIPT_DIR/sync-to-ovh.sh" "$INSTALL_DIR/hanasand-forgejo-sync-to-ovh"
+install -m 0755 "$SCRIPT_DIR/doctor.sh" "$INSTALL_DIR/hanasand-forgejo-doctor"
+install -m 0755 "$SCRIPT_DIR/sync.sh" "$INSTALL_DIR/hanasand-forgejo-sync-to-ovh"
 
 cat >/etc/systemd/system/hanasand-forgejo-doctor.service <<'UNIT'
 [Unit]
