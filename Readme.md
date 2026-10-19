@@ -51,9 +51,11 @@ docker compose up -d
 docker compose ps
 ```
 
-Only create those volumes for a new installation. On an existing host, confirm
-the named volumes contain the production data before starting or restoring the
-stack. Do not remove them to troubleshoot a container.
+Only create those volumes for a new installation. On an existing host, inspect
+both volumes and confirm they contain the expected production data before
+starting or restoring the stack. If either is missing on a production host,
+stop and investigate instead of creating an empty replacement. Do not remove
+volumes to troubleshoot a container.
 
 The first run may require completing Forgejo's setup in the web UI. Confirm the
 database connection uses PostgreSQL and that the public/root URL matches the
@@ -90,6 +92,9 @@ those values for the actual hosts before installing its systemd timers. The
 sync script checks that the standby is still in recovery and stopped before it
 copies Forgejo data; it does not perform automatic failover. Confirm PostgreSQL
 replication and the standby's state independently during recovery drills.
+The sync script defaults to copying a `git_runner_data` volume for older runner
+setups. Since this Compose stack has no runner, set `SYNC_RUNNER_DATA=0` when
+installing or running sync unless that volume is intentionally in use.
 
 ## Maintenance scripts
 
